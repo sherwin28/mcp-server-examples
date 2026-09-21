@@ -1,79 +1,84 @@
-# MCP Server Examples
+# mcp-server-examples
 
-**Practical Model Context Protocol (MCP) server implementations**
+**Five production MCP servers. Copy-paste into your agent.**
 
-[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)]()
-[![MCP](https://img.shields.io/badge/MCP-2025--06--18-purple.svg)]()
+MCP (Model Context Protocol) is the standard way to give LLM agents tools. Write one MCP server, it works with Claude, GPT, Qwen, anything MCP-compatible.
 
 ---
 
-## What this is
-
-Five production-grade MCP server examples, each in its own directory, with working code and test clients. Use these as copy-paste starters for your own AI agents.
-
 ## Servers included
 
-| Server | Purpose | Tools |
-|--------|---------|-------|
-| `pdf_server/` | Extract text + tables from PDFs | `extract_text`, `extract_tables`, `summarize` |
-| `sql_server/` | Safe SQL queries (read-only) | `query`, `list_tables`, `describe_table` |
-| `web_search_server/` | Web search with citations | `search`, `fetch_url` |
-| `code_search_server/` | Codebase semantic search | `search_code`, `get_function`, `get_class` |
-| `github_server/` | GitHub repo operations | `search_repos`, `read_file`, `list_issues` |
+| Server | Tools |
+|--------|-------|
+| `pdf_server/` | `extract_text`, `extract_tables`, `summarize` |
+| `web_search_server/` | `search` (DuckDuckGo), `fetch_url` |
+| `github_server/` | `search_repos`, `read_file` |
+| `code_search_server/` | `search_code`, `get_function` |
+| `sql_server/` | `query` (read-only, LIMIT-enforced), `list_tables` |
 
-## Why MCP
-
-MCP (Model Context Protocol) is the standard way to give LLM agents tools. Instead of writing tool-calling JSON for each provider, you write one MCP server and it works with Claude, GPT, Qwen, and any MCP-compatible client.
-
-## Features
-
-- ✅ **Real implementations** (not stubs)
-- ✅ **Error handling** patterns (timeouts, retries, circuit breakers)
-- ✅ **Security**: read-only modes, query limits, input sanitization
-- ✅ **Test clients** included
-- ✅ **Compatible** with Claude Agent SDK, LangChain MCP adapters
+---
 
 ## Quick start
 
 ```bash
-git clone https://github.com/sherwin28/mcp-server-examples.git
+git clone https://github.com/sherwin28/mcp-server-examples
 cd mcp-server-examples
 pip install -r requirements.txt
 
-# Run the SQL server (read-only)
-cd sql_server
-python server.py
+# Run any server (e.g., sql_server)
+cd sql_server && python server.py
 
-# In another terminal, run test client
+# In another terminal, test it
 python ../test_client.py
 ```
 
-## Use as a library
+---
+
+## Use as a Claude Agent SDK tool
 
 ```python
-from mcp import ClientSession, StdioServerParameters
-from mcp.client.stdio import stdio_client
+from claude_agent_sdk import Agent
+from mcp_servers.sql_server import run_sql_server
 
-async with stdio_client(StdioServerParameters(
-    command="python", args=["sql_server/server.py"]
-)) as (read, write):
-    async with ClientSession(read, write) as session:
-        await session.initialize()
-        result = await session.call_tool("query", {"sql": "SELECT * FROM users LIMIT 10"})
-        print(result.content)
+agent = Agent(
+    tools=[run_sql_server],
+    system_prompt="You can query the database. Always LIMIT your queries.",
+)
+
+result = agent.run("How many active users signed up last week?")
 ```
 
-## Tech Stack
+---
 
-- Python 3.11 / asyncio
-- MCP SDK
-- Claude Agent SDK
-- SQLAlchemy async
+## Use with LangChain MCP adapter
+
+```python
+from langchain_mcp_adapters import load_mcp_tools
+# ... load tools, pass to LangGraph agent
+```
+
+---
+
+## What's included beyond code
+
+- ✅ Real implementations (not stubs or pseudocode)
+- ✅ Error handling: timeouts, retries, circuit breakers
+- ✅ Security: read-only modes, query limits, input sanitization
+- ✅ Test client that works with any server
+- ✅ Compatible with Claude Agent SDK, LangChain MCP, smolagents
+
+---
+
+## Reference
+
+Built from a 5-server MCP architecture that shipped at Haleon for policy retrieval.
+
+---
 
 ## License
 
 MIT
 
-## Author
+---
 
-**魏远标** — AI Architect · [javai.tech](https://javai.tech)
+**Author**: 魏远标 · [javai.tech](https://javai.tech)
